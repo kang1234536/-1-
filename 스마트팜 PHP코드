@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<body>
+
+<style>
+
+body{background: #95E595 ;}
+
+</style>
+
+<form name = humidtempp method=post>
+
+<body>
+
+<h2>
+
+<img src = '/new/logo.png' align='middle' width = '130'height = '100'/>
+
+SMART PET MANAGEMENT
+
+<img src = '/new/lizard3.png'align = right  width = '200' height = '200'>
+
+</h2>
+
+</body>
+
+<body>
+
+<center>
+
+<p>
+
+<font size = "7">
+
+<h1>
+
+<img src = '/new/lizard2.png' align = 'middle' width='150' height='150'/>
+
+Environment Management Solution
+
+<h1>
+
+</font>
+
+</p>
+
+</center>
+
+</body>
+
+<body>
+
+<center>
+
+<?php
+
+$conn = mysqli_connect("localhost","test","0000","mysql");
+
+$query = "select * from humidtemp;";
+
+$result = mysqli_query($conn, $query);
+
+$row = mysqli_fetch_array($result);
+
+$FANval1 = 'ON';
+
+$FANval2 = 'OFF';
+
+echo "<img src = '/new/TEMP1.png' width = '200' height = '200'  />";
+
+echo "<img src = '/new/TEMP2.png' width = '200' height = '200'/>";
+
+echo "<img src = '/new/HUMID.png' width = '200' height = '200'/>";
+
+?>
+
+<?php
+
+if($row['fan'] == 1)
+
+	echo "<img src = '/new/fanON.png' width ='200' height = '200'/>";
+
+    else
+
+	echo "<img src = '/new/fanOFF.png' width = '200' height = '200'/>";
+
+?>
+
+&emsp;
+
+<?php
+
+if($row['heater'] == 1)
+
+	echo "<img src = '/new/heaterON.png' width = '200' height='200'/>";
+
+    else
+
+	echo "<img src = '/new/heaterOFF.png' width = '200' height = '200'/>";
+
+if($row['humidifier'] == 1)
+
+	echo "<img src = '/new/humidON.png' width = '200' height = '200'/>";
+
+    else
+
+	echo "<img src = '/new/humidOFF.png' width = '200' height = '200'/>";
+
+?>
+
+</center>
+
+</body>
+
+<body>
+
+ 
+
+<br>
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;
+
+<?php
+
+echo $row['send_temp'].'.C'.' / '.$row['send_humid'].'%'.' ';
+
+?>
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;
+
+<input type = 'text' name = 'tempphp' style =  'width: 5%; text-align:center;'>
+
+ 
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+
+<input type = 'text' name = 'humidphp' style = 'width: 5%; text-align:center;'>
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;&nbsp;
+
+ 
+
+<?php
+
+if($row['fan'] == 1)
+
+	echo 'ON';
+
+    else
+
+	echo 'OFF';
+
+?>
+
+ 
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;
+
+<?php
+
+if($row['heater'] == 1)
+
+	echo 'ON';
+
+    else
+
+	echo 'OFF';
+
+?>
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;
+
+<?php
+
+if($row['humidifier'] == 1)
+
+	echo 'ON';
+
+    else
+
+	echo 'OFF';
+
+?>
+
+<br>
+
+</body>
+
+ 
+
+<body>
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+
+<img src = '/new/lizard1.png' align='middle'  width = '170' height = '170'>
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;
+
+&emsp;&emsp;&emsp;
+
+<input type = 'submit' value = 'SETTING' style = 'width:5%;'/>&emsp;
+
+<input type = 'button' id = 'clk1' value = 'RELOAD' style = 'width:5%'onclick = 'load()'/>&emsp;
+
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+
+<img src = '/new/lizard2.png' align='middle'  width = '150' height = '150'>
+
+</body>
+
+ 
+
+ 
+
+<?php 
+
+$conn = mysqli_connect("localhost","test","0000","mysql");
+
+$query = "select * from humidtemp;";
+
+$result = mysqli_query($conn, $query);
+
+$humidsend = $_POST["humidphp"];
+
+$tempsend = $_POST["tempphp"];
+
+$humdev = $_POST["humiddev"];
+
+$temdev = $_POST["tempdev"];
+
+$row = mysqli_fetch_array($result);
+
+ 
+
+$query2 = "update humidtemp set humidity = '{$humidsend}';";
+
+$query3 = "update humidtemp set temperature = '{$tempsend}';";
+
+$query4 = "update humidtemp set humid_dev = '{$humdev}';";
+
+$query5 = "update humidtemp set temp_dev = '{$temdev}';";
+
+$result2 = mysqli_query($conn, $query2);
+
+$result3 = mysqli_query($conn, $query3);
+
+$result4 = mysqli_query($conn, $query4);
+
+$result5 = mysqli_query($conn, $query5);
+
+?>
+
+ 
+
+<body>
+
+<center>
+
+<?php
+
+if($result2)
+
+	echo "Humid Success<br>";
+
+else
+
+	echo "Humid Error<br>";
+
+if($result3)
+
+	echo "Temp Success<br>";
+
+else
+
+	echo "Temp Error<br>";
+
+?>
+
+</center>
+
+</body>
+
+ 
+
+ 
+
+<script>
+
+ 
+
+function set()
+
+{
+
+	setTimeout('location.reload()',2000);
+
+ 
+
+ 
+
+}
+
+function set1()
+
+{
+
+$("#img11").load(window.location.href + "#img11");
+
+}
+
+ 
+
+function load()
+
+{ 
+
+	window.location.reload();
+
+}
+
+ 
+
+</script>
+
+<body>
+
+<center>
+
+ 
+
+</center>
+
+</body>
+
+</form>
+
+</body>
+
+</html>
+
+ 

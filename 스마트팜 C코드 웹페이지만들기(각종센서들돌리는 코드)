@@ -1,0 +1,766 @@
+
+#include <wiringPi.h>
+
+#include <stdio.h>
+
+#include <stdlib.h>
+
+#include <stdint.h>
+
+#include </home/pi/Desktop/mysql/include/mariadb/mysql.h>
+
+ 
+
+#define MAX_TIME 83
+
+#define DHTPIN 7
+
+//#define SW 27 //Yellow 34 orange 36
+
+#define HU 25 // humidifier
+
+#define HE 2 // heater
+
+#define FA 0 //fan
+
+ 
+
+int dht11_val[5] = {0, };
+
+int a = 0;
+
+int b = 0;
+
+int c = 0;
+
+ 
+
+ 
+
+ 
+
+ 
+
+/*
+
+ * 
+
+ * name: dht11_read_val
+
+ * @param
+
+ * @return
+
+ * 
+
+ */
+
+void dht11_read_val()
+
+{
+
+		//MYSQL *conn = mariadb_connection(NULL);
+
+	MYSQL *conn = mysql_init(NULL);
+
+	MYSQL_RES *res;
+
+	MYSQL_ROW row;
+
+	//char *server = "localhost";
+
+	//char *user = "test";
+
+	//char *password = "0000";
+
+	//char *database = "test";
+
+	int gettemp;
+
+int gethumid;
+
+	//conn = mysql_real_connect(conn,"localhost","test","0000","mysql",0,NULL,0);
+
+	uint8_t Iststate = HIGH;
+
+	uint8_t counter =0;
+
+	uint8_t j=0, i;
+
+	uint8_t flag = HIGH;
+
+	uint8_t state = 0;
+
+	float f;
+
+	dht11_val[0] = dht11_val[1] = dht11_val[2] = dht11_val[3] = dht11_val[4] = 0;
+
+	pinMode(DHTPIN,OUTPUT);
+
+	digitalWrite(DHTPIN,LOW);
+
+	delay(18);
+
+	digitalWrite(DHTPIN,HIGH);
+
+	delayMicroseconds(30);
+
+    pinMode(DHTPIN,INPUT);
+
+    
+
+    for(int i =0; i<MAX_TIME; i++)
+
+    {
+
+		counter =0;
+
+		while(digitalRead(DHTPIN)==Iststate)
+
+		{
+
+			counter++;
+
+			delayMicroseconds(1);
+
+			if(counter ==200)
+
+			break;
+
+		}
+
+		Iststate = digitalRead(DHTPIN);
+
+		if(counter == 200)
+
+		break;
+
+		if((i>=4) && (i%2==0))
+
+		{
+
+			dht11_val[j/8]<<=1;
+
+			if(counter>40)
+
+			dht11_val[j/8]|=1;
+
+			j++;
+
+		}
+
+	}
+
+	if((j>=40) &&(dht11_val[4]==((dht11_val[0] +dht11_val[1] + dht11_val[2] +dht11_val[3])&0xff)))
+
+	{
+
+		//farenheit = dht11_val[2]*9./5.+32;
+
+		printf("Humidity = %d.%d %% Temperature = %d.%d *C \n",dht11_val[0],dht11_val[1],dht11_val[2],dht11_val[3]);
+
+		gettemp = dht11_val[2];
+
+		gethumid = dht11_val[0];
+
+		//(%.1f *F),farenheit
+
+	}
+
+	else 
+
+	{
+
+		printf("Invalid Data!!\n");
+
+	}
+
+	//int a = 50;
+
+	//int b = 25;
+
+	char query[255];
+
+	if(!conn)
+
+	{
+
+		printf("init fail\n");
+
+		exit(1);
+
+	}
+
+	conn = mysql_real_connect(conn,"localhost","test","0000","mysql",0,NULL,0);
+
+	if(conn)
+
+	{
+
+		printf("success\n");
+
+	}
+
+	else
+
+	{
+
+		printf("fail");
+
+	}
+
+	res = mysql_use_result(conn);
+
+	char hum[100] = "select humidity from humidtemp";
+
+	char tem[100] = "select temperature from humidtemp";
+
+	// temperature ricv-----------------------------------
+
+	if(mysql_query(conn,tem) != 0)
+
+	{
+
+		printf("query fail\n");
+
+	}
+
+	res = mysql_store_result(conn);
+
+	//int fields = mysql_num_fields(res);
+
+	int aa = mysql_num_fields(res);
+
+	if((row=mysql_fetch_row(res)) != NULL)
+
+	{
+
+		printf("temperature : %s \n",row[0]);
+
+		//char *ro1 = row[0];
+
+		//printf("numfields : %d \n", aa);
+
+	}
+
+	int tempset = atoi(row[0]);
+
+	mysql_free_result(res);
+
+	//--------------------------------------------------
+
+	//humidity ricv-------------------------------------
+
+	if(mysql_query(conn,hum) != 0)
+
+	{
+
+		printf("query fail\n");
+
+	}
+
+	res = mysql_store_result(conn);
+
+	//int fields = mysql_num_fields(res);
+
+	if((row=mysql_fetch_row(res)) != NULL)
+
+	{
+
+		printf("humidity : %s \n",row[0]);
+
+	}
+
+	int humidset = atoi(row[0]);
+
+	mysql_free_result(res);
+
+	//--------------------------------------------------
+
+	//humid,temp send ------------------------------------------
+
+	//humid
+
+	int aaa= 70;//dht11_val[0];
+
+	//temp
+
+	int bbb = 30;//dht11_val[2];
+
+	if(gethumid != 0)
+
+	{
+
+	sprintf(query , "UPDATE humidtemp SET send_humid = '%d'",gethumid);
+
+	mysql_query(conn,query);
+
+}
+
+	sprintf(query , "UPDATE humidtemp SET send_temp = '%d'",gettemp);
+
+	mysql_query(conn,query);
+
+ 
+
+	//---------------------------------------------------------
+
+	char humdev[100] = "select humid_dev from humidtemp";
+
+	char temdev[100] = "select temp_dev from humidtemp";
+
+	// temperature ricv-----------------------------------
+
+	if(mysql_query(conn,temdev) != 0)
+
+	{
+
+		printf("query fail\n");
+
+	}
+
+	res = mysql_store_result(conn);
+
+	//int fields = mysql_num_fields(res);
+
+	//int aa = mysql_num_fields(res);
+
+	if((row=mysql_fetch_row(res)) != NULL)
+
+	{
+
+		printf("temp_dev : %s \n",row[0]);
+
+		//char *ro1 = row[0];
+
+		//printf("numfields : %d \n", aa);
+
+	}
+
+	int tempdev = atoi(row[0]);
+
+	mysql_free_result(res);
+
+	if(mysql_query(conn,humdev) != 0)
+
+	{
+
+		printf("query fail\n");
+
+	}
+
+	res = mysql_store_result(conn);
+
+	//int fields = mysql_num_fields(res);
+
+	if((row=mysql_fetch_row(res)) != NULL)
+
+	{
+
+		printf("humid_dev : %s \n",row[0]);
+
+	}
+
+	int humiddev = atoi(row[0]);
+
+	mysql_free_result(res);
+
+	//LED ON/OFF--------------------------------------------------------
+
+	//pinMode(SW,OUTPUT);
+
+	//if(tempnum > 19)
+
+	//{
+
+	//digitalWrite(SW,1);
+
+	//delay(2000);
+
+	//digitalWrite(SW,0);
+
+	//}
+
+	//else
+
+	//{
+
+	//	digitalWrite(SW,0);
+
+	//}
+
+	//------------------------------------------------------------------
+
+	int ii = 1;
+
+	int jj = 5;
+
+	/*
+
+	pinMode(HE,OUTPUT);
+
+	pinMode(HU,OUTPUT);
+
+	pinMode(FA,OUTPUT);
+
+	if(100 < (tempset-tempdev))
+
+	{
+
+		digitalWrite(HE,1);
+
+		b = 1;
+
+		printf("Heater ON\n");
+
+		sprintf(query , "UPDATE humidtemp SET heater = '%d'",b);
+
+		mysql_query(conn,query);
+
+		digitalWrite(FA, 0);
+
+		a = 0;
+
+		printf("Fan OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	else if(100 > (tempset+tempdev))
+
+	{
+
+		digitalWrite(HE,0);
+
+		b = 0;
+
+		printf("Heater OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET heater = '%d'",b);
+
+		mysql_query(conn,query);
+
+		digitalWrite(FA, 1);
+
+		a = 1;
+
+		printf("Fan ON\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	else
+
+	{
+
+		digitalWrite(HE,0);
+
+		b = 0;
+
+		printf("Heater OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET heater = '%d'",b);
+
+		mysql_query(conn,query);
+
+		digitalWrite(FA, 0);
+
+		a = 0;
+
+		printf("Fan OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	if(100 < (humidset-humiddev))
+
+	{
+
+		digitalWrite(HU,1);
+
+		c = 1;
+
+		printf("Humidifier ON\n");
+
+		sprintf(query , "UPDATE humidtemp SET humidifier = '%d'",c);
+
+		mysql_query(conn,query);
+
+		digitalWrite(FA, 0);
+
+		a = 0;
+
+		printf("Fan OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	else if(100 > (humidset+humiddev))
+
+	{
+
+		digitalWrite(HU,0);
+
+		c = 0;
+
+		printf("Heater OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET humidifier = '%d'",c);
+
+		mysql_query(conn,query);
+
+		digitalWrite(FA, 1);
+
+		a = 1;
+
+		printf("Fan ON\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	else
+
+	{
+
+		digitalWrite(HU,0);
+
+		c = 0;
+
+		printf("Heater OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET humidifier = '%d'",c);
+
+		mysql_query(conn,query);
+
+		digitalWrite(FA, 0);
+
+		a = 0;
+
+		printf("Fan OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	*/
+
+	//HEATER ON/OFF ----------------------------------------------------
+
+	pinMode(HE,OUTPUT);
+
+	if(gettemp < tempset-tempdev)
+
+	{
+
+		digitalWrite(HE, 1);
+
+		b = 1;
+
+		printf("Heater ON\n");
+
+		sprintf(query , "UPDATE humidtemp SET heater = '%d'",b);
+
+		mysql_query(conn,query);
+
+	}
+
+	else
+
+	{
+
+		digitalWrite(HE, 0);
+
+		b = 0;
+
+		printf("Heater OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET heater = '%d'",b);
+
+		mysql_query(conn,query);
+
+	}
+
+	//------------------------------------------------------------------
+
+	//Humidifier ON/OFF ------------------------------------------------
+
+ 
+
+	pinMode(HU,OUTPUT);
+
+	if(gethumid < humidset-humiddev)
+
+	{
+
+		digitalWrite(HU, 0);
+
+		c = 1;
+
+		printf("Humidifier ON\n");
+
+		sprintf(query , "UPDATE humidtemp SET humidifier = '%d'",c);
+
+		mysql_query(conn,query);
+
+	}
+
+	else
+
+	{
+
+		digitalWrite(HU, 1);
+
+		c = 0;
+
+		printf("Humidifier OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET humidifier = '%d'",c);
+
+		mysql_query(conn,query);
+
+	}
+
+	//------------------------------------------------------------------
+
+	//FAN ON/OFF -------------------------------------------------------
+
+	pinMode(FA,OUTPUT);
+
+	if( gettemp > tempset+tempdev || gethumid > humidset+humiddev)
+
+	{
+
+		if(b == 0 && c == 0)
+
+		{
+
+			digitalWrite(FA, 1);
+
+			a = 1;
+
+			printf("Fan ON\n");
+
+			sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+			mysql_query(conn,query);
+
+		}
+
+		else
+
+		{
+
+			digitalWrite(FA, 0);
+
+			a = 0;
+
+			printf("Fan OFF\n");
+
+			sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+			mysql_query(conn,query);
+
+		}
+
+	}
+
+	else
+
+	{
+
+		digitalWrite(FA, 0);
+
+		a = 0;
+
+		printf("Fan OFF\n");
+
+		sprintf(query , "UPDATE humidtemp SET fan = '%d'",a);
+
+		mysql_query(conn,query);
+
+	}
+
+	//------------------------------------------------------------------
+
+	//Humidifier();
+
+	//Heater();
+
+	//Fan();
+
+	mysql_close(conn);
+
+}
+
+ 
+
+//int Fan()
+
+//{
+
+//	if(wiringPiSetup() == -1)
+
+//	return 1;
+
+//	pinMode(FA,OUTPUT);
+
+//	digitalWrite(FA, 1);
+
+//	delay(500);
+
+//	digitalWrite(FA, 0);
+
+//	return 0;
+
+//}
+
+ 
+
+ 
+
+int main(void)
+
+{
+
+	printf("Interfacing Tempperature and Humidity Sensor (DHT11) With Raspberry Pi\n");
+
+	//login();
+
+	if(wiringPiSetup()==-1)
+
+	exit(1);
+
+	while(1)
+
+	{
+
+		//dht11_read();
+
+		dht11_read_val();
+
+		delay(2000);
+
+	}
+
+	return 0;
+
+}
+
+ 
